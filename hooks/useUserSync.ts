@@ -25,6 +25,7 @@ export const useUserSync = () => {
 
     const syncUser = async () => {
       try {
+        //Check if the user exists in Supabase
         const { data: existingUser, error: fetchError } = await authSupabase
           .from("users")
           .select("clerk_id, currency")
@@ -36,15 +37,16 @@ export const useUserSync = () => {
           setNeedsOnboarding(true);
           return;
         }
-
+        //If the user already exists updates Zustand with their currency
         if (existingUser) {
           setCurrency(existingUser.currency ?? "INR");
           setNeedsOnboarding(!existingUser.currency);
           return;
         }
-
+        //Create the user if they don't exist
+        //Gets the user's email from Clerk
         const email = user.emailAddresses[0].emailAddress;
-
+        //creates the user's record in Supabase
         const { data: newUser, error: insertError } = await authSupabase
           .from("users")
           .upsert(
@@ -64,10 +66,10 @@ export const useUserSync = () => {
           setNeedsOnboarding(true);
           return;
         }
-
+        //Updates Zustand with the new user's currency and onboarding status
         setCurrency(newUser?.currency ?? "USD");
         setNeedsOnboarding(!newUser?.currency);
-
+        //Every new user automatically gets a default Cash account with
         const { error: accountError } = await authSupabase
           .from("accounts")
           .insert({
